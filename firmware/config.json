@@ -1,0 +1,17 @@
+{
+  "wifi": {
+    "ssid": "",
+    "password": ""
+  },
+  "midi": {
+    "channel": "all",
+    "uart_rx_pin": 17,
+    "simulate": true
+  },
+  "smoothing": {
+    "window": 1
+  },
+  "server": {
+    "port": 80
+  }
+}
