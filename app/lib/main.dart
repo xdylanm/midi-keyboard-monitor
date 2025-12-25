@@ -1,14 +1,38 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+// import 'package:permission_handler/permission_handler.dart';
 import 'ble_service.dart';
 import 'models.dart';
 import 'velocity_view.dart';
 import 'sheet_view.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // await _requestBlePermissions();
   runApp(MyApp());
 }
+
+// Future<void> _requestBlePermissions() async {
+//   try {
+//     if (Platform.isAndroid) {
+//       debugPrint('Requesting Android BLE permissions');
+//       final statuses = await [
+//         Permission.bluetoothScan,
+//         Permission.bluetoothConnect,
+//         Permission.bluetooth,
+//         Permission.location,
+//       ].request();
+//       debugPrint('Permission statuses: $statuses');
+//     } else if (Platform.isIOS) {
+//       debugPrint('Requesting iOS Bluetooth permission');
+//       final status = await Permission.bluetooth.request();
+//       debugPrint('iOS bluetooth permission: $status');
+//     }
+//   } catch (e) {
+//     debugPrint('Permission request failed: $e');
+//   }
+// }
 
 class MyApp extends StatelessWidget {
   @override
@@ -89,6 +113,5 @@ class _HomePageState extends State<HomePage> {
 
   void _simulatePress() {
     _ble.simulateNote(60 + (_recent.length % 12), (20 + (_recent.length * 7)) % 128);
-    _ble.mockConnect();
   }
 }

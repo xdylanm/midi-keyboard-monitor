@@ -12,6 +12,9 @@ import machine
 import time
 import ujson as json
 
+# Set to True to enable verbose MIDI event logging on the REPL
+DEBUG = False
+
 
 class MidiReceiver:
     def __init__(self, uart_id=0, rx_pin=17, baud=31250, simulate=False):
@@ -122,7 +125,8 @@ class MidiReceiver:
         obj = {"type": "note", "event": ev_type, "channel": channel, "note": note, "velocity": velocity, "ts": time.ticks_ms()}
         # Log minimal info for debugging
         try:
-            print('MIDI ->', ev_type, 'ch', channel, 'note', note, 'vel', velocity)
+            if DEBUG:
+                print('MIDI ->', ev_type, 'ch', channel, 'note', note, 'vel', velocity)
         except Exception:
             pass
         if self._cb:

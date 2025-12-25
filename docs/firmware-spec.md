@@ -28,7 +28,17 @@ Build a small, low-latency device based on the Raspberry Pi Pico W that connects
    - Pico W powered via USB or external 5 V regulator.
 
 3. Status
-   - Use the on-board LED indicator for network status and MIDI activity.
+  - Use the on-board LED indicator for network status and MIDI activity.
+  - A dedicated blue status LED is connected to GPIO0. LED patterns:
+    - "Searching/Pairing": slow blink (e.g. 200ms on / 800ms off).
+    - "Connected": steady on (or gentle pulse in future revisions).
+
+4. User Button (added)
+  - A push-button is connected to GPIO15 and configured with an internal pull-up; the switch is active-low.
+  - Behavior:
+    - Short press (release within 5s): when BLE is connected this generates a simulated Note On followed by Note Off (useful for verification without a physical keyboard).
+    - Long press (hold >= 5s): return device to pairing/searching state (restart BLE advertising).
+  - The firmware should debounce the input and implement the 5s hold detection in software.
 
 ## Software Architecture
 
