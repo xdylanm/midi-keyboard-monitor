@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GlobalConfig",
+  "type": "object",
+  "properties": {
+    "version": { "type": "string", "default": "1.0" },
+    "mapping": { "type": "string", "enum": ["linear","square_root","logarithmic"], "default": "linear" },
+    "calibration": {
+      "type": "object",
+      "properties": {
+        "mode": { "type": "string", "enum": ["none","manual"], "default": "none" },
+        "min": { "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.0 },
+        "max": { "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 1.0 }
+      },
+      "required": ["mode"]
+    },
+    "autoBackupEnabled": { "type": "boolean", "default": true }
+  },
+  "additionalProperties": false
+}

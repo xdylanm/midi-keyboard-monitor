@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dynamics view mockup: metronome, instantaneous bars, accuracy bars, controls -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+  <style>
+    .bg { fill: #f6f7f9 }
+    .panel { fill: #ffffff; stroke: #d0d6dc; stroke-width: 1; rx:8 }
+    .muted { fill: #9aa8b2 }
+    .target-band { fill: #e6eef6 }
+    .target-line { stroke: #1f618d; stroke-width:2 }
+    .bar-fill { fill: #0072B2 }
+    .bar-error { fill: #D55E00 }
+    .acc-fill { fill: #56B4E9 }
+    .text { font-family: Inter, Arial, sans-serif; fill: #122028 }
+    .label { font-size:14px }
+    .value { font-size:16px; font-weight:600 }
+    .btn { fill:#0b69ff; rx:6 }
+    .btn-text { fill:#fff; font-weight:600 }
+  </style>
+
+  <rect class="bg" x="0" y="0" width="1200" height="720" />
+
+  <!-- Left: Score frame placeholder -->
+  <g transform="translate(24,24)">
+    <rect class="panel" width="540" height="672"/>
+    <text class="text label" x="20" y="34">Score Frame</text>
+    <rect x="20" y="56" width="500" height="600" fill="#fbfdff" stroke="#e1e8ef" rx="4"/>
+    <text class="text" x="40" y="96" fill="#74808a">[Music engraving area — 4 measures shown]</text>
+  </g>
+
+  <!-- Right: Dynamics frame -->
+  <g transform="translate(588,24)">
+    <rect class="panel" width="588" height="672"/>
+    <text class="text label" x="20" y="34">Dynamics</text>
+
+    <!-- Metronome row -->
+    <g transform="translate(20,56)">
+      <rect x="0" y="0" width="548" height="56" fill="#fff" stroke="#e6eef6" rx="6"/>
+      <circle cx="36" cy="28" r="12" fill="#ffffff" stroke="#122028" stroke-width="2"/>
+      <!-- blinking dot (mock) -->
+      <circle cx="36" cy="28" r="6" fill="#0072B2"/>
+      <text class="text label" x="64" y="34">Metronome</text>
+      <text class="text" x="220" y="34">Tempo:</text>
+      <rect x="280" y="14" width="56" height="28" rx="4" fill="#f1f5f8" stroke="#d6e0e8"/>
+      <text class="text value" x="296" y="34">120</text>
+      <rect x="348" y="14" width="56" height="28" rx="4" fill="#f1f5f8" stroke="#d6e0e8"/>
+      <text class="text" x="364" y="34">BPM</text>
+      <text class="text" x="440" y="34">Click: </text>
+      <text class="text" x="488" y="34">On</text>
+    </g>
+
+    <!-- Bars area -->
+    <g transform="translate(20,130)">
+      <!-- Voice: Right Hand (example) -->
+      <text class="text label" x="0" y="0">Right Hand</text>
+      <!-- full-range outline for instantaneous bar -->
+      <rect x="12" y="40" width="420" height="28" fill="none" stroke="#cfdbe3" rx="6"/>
+      <!-- instantaneous fill (smoothed) inside outline (example 0.57 -> width 0.57*420=240) -->
+      <rect x="12" y="40" width="240" height="28" class="bar-fill" rx="6"/>
+      <!-- target band (vertical semi-transparent window) centered at mf (0.57) -->
+      <!-- 50% band -> half-width = 0.035 => full width = 0.07 * 420 = 29.4 ~30px -->
+      <rect x="236" y="40" width="30" height="28" fill="#e6eef6" opacity="0.9" rx="4" stroke="#000" stroke-width="1.5"/>
+      <!-- target vertical line at 0.57 -->
+      <line x1="251" y1="36" x2="251" y2="72" stroke="#1f618d" stroke-width="2" stroke-dasharray="4 2"/>
+      <!-- tick marks and dynamics labels -->
+      <g class="text" transform="translate(0,16)">
+        <line x1="75" y1="8" x2="75" y2="14" stroke="#9aa8b2"/>
+        <text x="75" y="0" text-anchor="middle" font-size="12">pp</text>
+        <line x1="134" y1="8" x2="134" y2="14" stroke="#9aa8b2"/>
+        <text x="134" y="0" text-anchor="middle" font-size="12">p</text>
+        <line x1="193" y1="8" x2="193" y2="14" stroke="#9aa8b2"/>
+        <text x="193" y="0" text-anchor="middle" font-size="12">mp</text>
+        <line x1="251" y1="8" x2="251" y2="14" stroke="#9aa8b2"/>
+        <text x="251" y="0" text-anchor="middle" font-size="12">mf</text>
+        <line x1="310" y1="8" x2="310" y2="14" stroke="#9aa8b2"/>
+        <text x="310" y="0" text-anchor="middle" font-size="12">f</text>
+        <line x1="369" y1="8" x2="369" y2="14" stroke="#9aa8b2"/>
+        <text x="369" y="0" text-anchor="middle" font-size="12">ff</text>
+      </g>
+      <!-- instantaneous fill (smoothed) inside outline (example 0.57 -> width 0.57*420=240) -->
+      <rect x="12" y="40" width="240" height="28" class="bar-fill" rx="6"/>
+      <text class="text value" x="456" y="62">0.57</text>
+      <text class="text" x="456" y="80" fill="#0072B2">In range</text>
+    </g>
+
+    <g transform="translate(20,220)">
+      <!-- Voice: Left Hand (example) -->
+      <text class="text label" x="0" y="0">Left Hand</text>
+      <!-- full-range outline -->
+      <rect x="12" y="40" width="420" height="28" fill="none" stroke="#cfdbe3" rx="6"/>
+      <!-- target band centered at mp (0.43) -->
+      <!-- 50% band -> full width ~30px -->
+      <rect x="178" y="40" width="30" height="28" fill="#e6eef6" opacity="0.9" rx="4" stroke="#000" stroke-width="1.5"/>
+      <!-- target vertical line at 0.43 -->
+      <line x1="193" y1="36" x2="193" y2="72" stroke="#1f618d" stroke-width="2" stroke-dasharray="4 2"/>
+      <!-- tick marks and dynamics labels -->
+      <g class="text" transform="translate(0,16)">
+        <line x1="75" y1="8" x2="75" y2="14" stroke="#9aa8b2"/>
+        <text x="75" y="0" text-anchor="middle" font-size="12">pp</text>
+        <line x1="134" y1="8" x2="134" y2="14" stroke="#9aa8b2"/>
+        <text x="134" y="0" text-anchor="middle" font-size="12">p</text>
+        <line x1="193" y1="8" x2="193" y2="14" stroke="#9aa8b2"/>
+        <text x="193" y="0" text-anchor="middle" font-size="12">mp</text>
+        <line x1="251" y1="8" x2="251" y2="14" stroke="#9aa8b2"/>
+        <text x="251" y="0" text-anchor="middle" font-size="12">mf</text>
+        <line x1="310" y1="8" x2="310" y2="14" stroke="#9aa8b2"/>
+        <text x="310" y="0" text-anchor="middle" font-size="12">f</text>
+        <line x1="369" y1="8" x2="369" y2="14" stroke="#9aa8b2"/>
+        <text x="369" y="0" text-anchor="middle" font-size="12">ff</text>
+      </g>
+      <rect x="12" y="40" width="140" height="28" class="bar-error" rx="6"/>
+      <!-- target band centered at mp (0.43) drawn on top of fill -->
+      <!-- 50% band -> full width ~30px -->
+      <rect x="178" y="40" width="30" height="28" fill="#e6eef6" opacity="0.9" rx="4" stroke="#000" stroke-width="1.5"/>
+      <!-- target vertical line at 0.43 -->
+      <line x1="193" y1="36" x2="193" y2="72" stroke="#1f618d" stroke-width="2" stroke-dasharray="4 2"/>
+      <text class="text value" x="456" y="62">0.34</text>
+      <text class="text" x="456" y="80" fill="#D55E00">Out of range</text>
+    </g>
+
+    <!-- Accuracy bars -->
+    <g transform="translate(20,340)">
+      <text class="text label" x="0" y="0">Accuracy</text>
+      <text class="text" x="0" y="22">Right Hand</text>
+      <rect x="12" y="28" width="420" height="18" fill="#f1f5f8" rx="6"/>
+      <rect x="12" y="28" width="360" height="18" class="acc-fill" rx="6"/>
+      <text class="text value" x="456" y="42">90%</text>
+
+      <text class="text" x="0" y="72">Left Hand</text>
+      <rect x="12" y="78" width="420" height="18" fill="#f1f5f8" rx="6"/>
+      <rect x="12" y="78" width="320" height="18" class="acc-fill" rx="6"/>
+      <text class="text value" x="456" y="92">71%</text>
+    </g>
+
+    <!-- Controls -->
+    <g transform="translate(20,500)">
+      <rect x="0" y="0" width="120" height="44" class="btn"/>
+      <text class="btn-text" x="28" y="30">Start</text>
+      <rect x="136" y="0" width="120" height="44" fill="#6c757d" rx="6"/>
+      <text class="text" x="170" y="30" fill="#fff">Done</text>
+      <rect x="272" y="0" width="220" height="44" fill="#fff" stroke="#d6e0e8" rx="6"/>
+      <text class="text" x="288" y="30">Plan: Major C, 1 octave</text>
+    </g>
+
+  </g>
+
+</svg>
