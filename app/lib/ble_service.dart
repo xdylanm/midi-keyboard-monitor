@@ -16,6 +16,11 @@ class BleService {
   StreamSubscription<DiscoveredDevice>? _scanSub;
   StreamSubscription<ConnectionStateUpdate>? _connSub;
   StreamSubscription<List<int>>? _notifySub;
+  Timer? _periodicScanTimer;
+  Timer? _scanTimeoutTimer;
+
+  final _scanningController = StreamController<bool>.broadcast();
+  Stream<bool> get scanning => _scanningController.stream;
 
   // BLE MIDI service/characteristic
   static final Uuid _midiService = Uuid.parse('03B80E5A-EDE8-4B33-A751-6CE34EC4C700');
@@ -25,20 +30,48 @@ class BleService {
 
   BleService() {
     debugPrint('Starting BLE service');
-    _startScan();
+    // Start periodic scanning so devices are discovered even if not immediately
+    // available when the app starts.
+    startPeriodicScan();
   }
 
   void dispose() {
+    // Trigger a disconnect if connected (async) then clean up streams.
+    disconnect();
     _scanSub?.cancel();
     _connSub?.cancel();
     _notifySub?.cancel();
+    _periodicScanTimer?.cancel();
+    _scanTimeoutTimer?.cancel();
+    _scanningController.close();
     _eventController.close();
     _connectionStateController.close();
   }
 
+  /// Disconnect from the currently connected device, if any.
+  /// This is safe to call multiple times.
+  Future<void> disconnect() async {
+    final deviceId = _connectedDeviceId;
+    if (deviceId != null) {
+      debugPrint('BleService: disconnecting from $deviceId');
+      try {
+        await _connSub?.cancel();
+      } catch (e) {
+        debugPrint('BleService: error cancelling connection subscription: $e');
+      }
+      _connectedDeviceId = null;
+      _connectionStateController.add(false);
+    }
+    _notifySub?.cancel();
+    _scanSub?.cancel();
+    stopPeriodicScan();
+  }
+
   void _startScan() {
     _scanSub?.cancel();
+    _scanTimeoutTimer?.cancel();
     debugPrint('BleService: starting scan (MIDI service filter)');
+    _scanningController.add(true);
     _scanSub = _ble.scanForDevices(withServices: [_midiService]).listen((device) {
       debugPrint('BleService: discovered device: ${device.id} name=${device.name}');
       // Connect to the first device found (only if not already connected).
@@ -47,7 +80,45 @@ class BleService {
       }
     }, onError: (e) {
       debugPrint('BleService: scan error: $e');
+      _scanningController.add(false);
     });
+
+    // Stop the active scan after a short timeout to conserve resources.
+    _scanTimeoutTimer = Timer(const Duration(seconds: 6), () {
+      debugPrint('BleService: scan timeout, cancelling scan');
+      _scanSub?.cancel();
+      _scanSub = null;
+      _scanningController.add(false);
+    });
+  }
+
+  /// Public API to trigger a scan for MIDI devices.
+  void startScan() {
+    _startScan();
+  }
+
+  /// Start periodic scanning loop. Scans immediately and then every [interval]
+  /// seconds while not connected.
+  void startPeriodicScan({Duration interval = const Duration(seconds: 10)}) {
+    if (_connectedDeviceId != null) return;
+    // Start an immediate scan.
+    _startScan();
+    _periodicScanTimer?.cancel();
+    _periodicScanTimer = Timer.periodic(interval, (_) {
+      if (_connectedDeviceId == null) {
+        _startScan();
+      } else {
+        _periodicScanTimer?.cancel();
+      }
+    });
+  }
+
+  void stopPeriodicScan() {
+    _periodicScanTimer?.cancel();
+    _scanTimeoutTimer?.cancel();
+    try {
+      _scanningController.add(false);
+    } catch (_) {}
   }
 
   void _connectTo(String deviceId) {
@@ -58,20 +129,24 @@ class BleService {
       if (update.connectionState == DeviceConnectionState.connected) {
         _connectedDeviceId = deviceId;
         _connectionStateController.add(true);
+        // Connected — stop scanning timers and subscribe to MIDI.
+        _scanTimeoutTimer?.cancel();
+        _periodicScanTimer?.cancel();
+        _scanningController.add(false);
         _subscribeToMidi(deviceId);
       } else if (update.connectionState == DeviceConnectionState.disconnected) {
         debugPrint('BleService: disconnected from $deviceId');
         _connectedDeviceId = null;
         _connectionStateController.add(false);
         _notifySub?.cancel();
-        // restart scanning
-        _startScan();
+        // restart periodic scanning
+        startPeriodicScan();
       }
     }, onError: (e) {
       debugPrint('BleService: connection error for $deviceId: $e');
       _connectionStateController.add(false);
       // try scanning again
-      _startScan();
+      startPeriodicScan();
     });
   }
 

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 // import 'package:permission_handler/permission_handler.dart';
 import 'ble_service.dart';
+import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
+import 'package:flutter/services.dart';
 import 'models.dart';
 import 'velocity_view.dart';
 import 'sheet_view.dart';
@@ -59,6 +61,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _checkBluetooth();
     _sub = _ble.events.listen((e) {
       setState(() {
         _latest = e;
@@ -68,9 +71,72 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<void> _checkBluetooth() async {
+    try {
+      final bleApi = FlutterReactiveBle();
+      // Wait for a stable status (skip transient `unknown`) with a short timeout.
+      final status = await bleApi.statusStream
+          .firstWhere((s) => s != BleStatus.unknown)
+          .timeout(const Duration(seconds: 3));
+      debugPrint('Ble status: $status');
+      if (status == BleStatus.poweredOff) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          showDialog<void>(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: Text('Bluetooth is off'),
+              content: Text('Bluetooth appears to be disabled. Please enable Bluetooth to use the MIDI monitor.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('OK'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _checkBluetooth();
+                  },
+                  child: Text('Retry'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    const channel = MethodChannel('midi_keyboard_monitor_app/bluetooth');
+                    try {
+                      await channel.invokeMethod('requestEnable');
+                      // Wait for BLE to become ready, then trigger a scan.
+                      try {
+                        await bleApi.statusStream.firstWhere((s) => s == BleStatus.ready).timeout(const Duration(seconds: 8));
+                        _ble.startScan();
+                      } catch (e) {
+                        debugPrint('Waiting for BLE ready failed: $e');
+                      }
+                    } catch (e) {
+                      debugPrint('Platform requestEnable failed: $e');
+                    }
+                  },
+                  child: Text('Enable'),
+                ),
+              ],
+            ),
+          );
+        });
+      }
+    } on TimeoutException catch (e) {
+      debugPrint('BLE status check timed out: $e');
+    } catch (e) {
+      debugPrint('Error checking BLE status: $e');
+    }
+  }
+
   @override
   void dispose() {
     _sub?.cancel();
+    // Request a clean disconnect before disposing the BLE service.
+    _ble.disconnect();
     _ble.dispose();
     super.dispose();
   }
@@ -88,14 +154,22 @@ class _HomePageState extends State<HomePage> {
               stream: _ble.connected,
               builder: (context, snap) {
                 final connected = snap.data ?? false;
-                return Row(
-                  children: [
-                    Icon(connected ? Icons.bluetooth_connected : Icons.bluetooth_disabled, color: connected ? Colors.blue : Colors.grey),
-                    SizedBox(width: 8),
-                    Text(connected ? 'Connected' : 'Not connected'),
-                    Spacer(),
-                    ElevatedButton(onPressed: _simulatePress, child: Text('Simulate')),
-                  ],
+                return StreamBuilder<bool>(
+                  stream: _ble.scanning,
+                  builder: (context, scanSnap) {
+                    final scanning = scanSnap.data ?? false;
+                    final label = connected ? 'Connected' : (scanning ? 'Scanning' : 'Not connected');
+                    final icon = connected ? Icons.bluetooth_connected : Icons.bluetooth_disabled;
+                    return Row(
+                      children: [
+                        Icon(icon, color: connected ? Colors.blue : (scanning ? Colors.orange : Colors.grey)),
+                        SizedBox(width: 8),
+                        Text(label),
+                        Spacer(),
+                        ElevatedButton(onPressed: _simulatePress, child: Text('Simulate')),
+                      ],
+                    );
+                  },
                 );
               },
             ),
