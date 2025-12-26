@@ -130,7 +130,7 @@ async def main():
         led.start_searching()
 
     # wiring MIDI receiver; use simulate=True when no UART available
-    midi = MidiReceiver(simulate=True)
+    midi = MidiReceiver(simulate=False)
     midi.register_callback(lambda e: asyncio.create_task(midi_event_cb(e, ble)))
     await midi.start()
 

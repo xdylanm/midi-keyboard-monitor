@@ -206,7 +206,6 @@ class BLEMidi:
         
         try: 
             if self._midi_characteristic is not None:
-                print("sending MIDI packet")
                 self._midi_characteristic.write(data=midi_bytes, send_update=True)
                 return True
             else:

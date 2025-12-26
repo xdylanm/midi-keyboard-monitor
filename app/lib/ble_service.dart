@@ -80,7 +80,7 @@ class BleService {
     final char = QualifiedCharacteristic(serviceId: _midiService, characteristicId: _midiChar, deviceId: deviceId);
     debugPrint('BleService: subscribing to MIDI characteristic on $deviceId');
     _notifySub = _ble.subscribeToCharacteristic(char).listen((data) {
-      debugPrint('BleService: notify (${data.length} bytes) from $deviceId');
+      //debugPrint('BleService: notify (${data.length} bytes) from $deviceId');
       _handleMidiPacket(Uint8List.fromList(data));
     }, onError: (e) {
       debugPrint('BleService: subscription error: $e');
@@ -90,7 +90,7 @@ class BleService {
   void _handleMidiPacket(Uint8List data) {
     // Simple BLE-MIDI parser tailored to the firmware packets (header byte then raw MIDI bytes).
     //int i = 0;
-    debugPrint('BleService: parsing MIDI packet (${data.length} bytes)');
+    //debugPrint('BleService: parsing MIDI packet (${data.length} bytes)');
     if (data.length < 5) {
       debugPrint('BleService: invalid MIDI packet, too short (${data.length} bytes)');
       return;
