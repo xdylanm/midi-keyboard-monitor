@@ -33,22 +33,11 @@ class BLEMidi:
         self._midi_characteristic = None
         self._midi_service = None
         self._conn_handle = None
-        # self._notify_handle = None
         self._registered = False
-        # self._subscribed = False
         print('BLEMidi: initializing, name=', self._name)
         self._init_gatt()
 
     def _init_gatt(self):
-        # Register MIDI service with a single notify characteristic
-        # Allow read and write-without-response in addition to notify so
-        # centrals (especially some Android clients) can complete setup/subscribe.
-        # midi_char = (_MIDI_CHAR_UUID, bt.FLAG_NOTIFY | bt.FLAG_READ | bt.FLAG_WRITE_NO_RESPONSE ,)
-        # midi_svc = ( _MIDI_SERVICE_UUID, (midi_char,), )
-        # services = (midi_svc,)
-        # ((self._notify_handle,),) = self._ble.gatts_register_services(services)
-        # self._ble.irq(self._irq_handler)
-
         self._midi_service = aioble.Service(_MIDI_SERVICE_UUID)
         self._midi_characteristic = aioble.Characteristic(
             service=self._midi_service,
@@ -67,7 +56,8 @@ class BLEMidi:
     
     def disconnect(self):
         """Stop BLE advertising and disconnect if connected."""
-        if self._conn_handle is not None:
+        if self.is_connected():
+            print("Disconnecting...")
             self._conn_handle.disconnect()
             self._conn_handle = None
 
@@ -87,7 +77,7 @@ class BLEMidi:
                         #     print("... Paired")
                         # except Exception as e:
                         #     print("Pairing failed:", e)
-                        await connection.disconnected()
+                        await self._conn_handle.disconnected()
                         print("Disconnected")
                         self._conn_handle = None
             except asyncio.CancelledError:
@@ -98,100 +88,6 @@ class BLEMidi:
             finally:
                 # Ensure the loop continues to the next iteration
                 await asyncio.sleep_ms(100)
-
-    # def _irq_handler(self, event, data):
-    #     # Debug: print raw IRQ events with names and readable payloads so
-    #     # pairing/connection failures are easier to diagnose on the REPL.
-    #     try:
-    #         prefix = 'BLEMidi IRQ: %d' % (event,)
-
-    #         # Format data tuple; convert memoryviews/bytes to hex (truncate)
-    #         formatted_parts = []
-    #         try:
-    #             for part in data:
-    #                 if isinstance(part, memoryview) or isinstance(part, (bytes, bytearray)):
-    #                     b = bytes(part)
-    #                     hx = b.hex()
-    #                     if len(hx) > 64:
-    #                         hx = hx[:64] + '...'
-    #                     formatted_parts.append('<bytes 0x' + hx + '>')
-    #                 else:
-    #                     formatted_parts.append(str(part))
-    #         except Exception:
-    #             formatted_parts = [str(data)]
-
-    #         try:
-    #             print(prefix + ' ' + '(' + ', '.join(formatted_parts) + ')')
-    #         except Exception:
-    #             print(prefix, data)
-    #     except Exception:
-    #         # Ensure IRQ handler doesn't crash if printing fails for any reason
-    #         pass
-
-    #     # Support both underscore-prefixed and non-prefixed IRQ constants
-    #     if event == _IRQ_CENTRAL_CONNECT:
-    #         # (conn_handle, addr_type, addr)
-    #         conn_handle, _, _ = data
-    #         self._conn_handle = conn_handle
-    #         print('BLEMidi: central connected, handle=', conn_handle)
-    #     elif event == _IRQ_CENTRAL_DISCONNECT:
-    #         conn_handle, _, _ = data
-    #         print('BLEMidi: central disconnected, handle=', conn_handle)
-    #         if conn_handle == self._conn_handle:
-    #             self._conn_handle = None
-    #             self._subscribed = False
-    #             # resume advertising
-    #             self.start_advertising()
-    #     elif _IRQ_GATTS_WRITE is not None and event == _IRQ_GATTS_WRITE:
-    #         # (conn_handle, attr_handle)
-    #         try:
-    #             conn_handle, attr_handle = data
-    #         except Exception:
-    #             conn_handle = data[0]
-    #             attr_handle = data[1]
-    #         # Read written value
-    #         try:
-    #             val = self._ble.gatts_read(attr_handle)
-    #         except Exception:
-    #             val = None
-    #         # Pretty-print write
-    #         try:
-    #             if isinstance(val, (bytes, bytearray, memoryview)):
-    #                 hx = bytes(val).hex()
-    #                 print('BLEMidi: GATTS_WRITE conn=', conn_handle, 'attr=', attr_handle, 'value=0x' + hx)
-    #             else:
-    #                 print('BLEMidi: GATTS_WRITE conn=', conn_handle, 'attr=', attr_handle, 'value=', val)
-    #         except Exception:
-    #             pass
-    #         # If write to CCCD (commonly at notify_handle + 1), interpret subscription
-    #         try:
-    #             if self._notify_handle is not None and attr_handle == (self._notify_handle + 1):
-    #                 # CCCD: 0x0001 enables notifications, 0x0002 enables indications
-    #                 if val and len(val) >= 2 and bytes(val)[0] == 1:
-    #                     self._subscribed = True
-    #                     print('BLEMidi: client subscribed to notifications')
-    #                 else:
-    #                     self._subscribed = False
-    #                     print('BLEMidi: client unsubscribed from notifications')
-    #         except Exception:
-    #             pass
-
-
-    # def start_advertising(self, interval_us=500000):
-    #     # Advertise as a peripheral with name and MIDI service
-    #     name = bytes(self._name, 'utf-8')
-    #     adv_payload = bytearray()
-    #     # Flags
-    #     adv_payload += b'\x02\x01\x06'
-    #     # Complete local name
-    #     adv_payload += bytes([len(name) + 1, 0x09]) + name
-    #     # Service UUID (128-bit) - include in scan response would be better, but keep simple
-    #     print('BLEMidi: start advertising, name=', self._name)
-    #     self._ble.gap_advertise(interval_us, adv_payload)
-
-    # def stop_advertising(self):
-    #     # pass None to interval to stop advertising
-    #     self._ble.gap_advertise(interval_us=None)
 
     def is_connected(self):
         return self._conn_handle is not None
@@ -212,20 +108,6 @@ class BLEMidi:
                 return False
         except Exception:
             return False
-        # Different ports expose `gatts_notify` with slightly different signatures.
-        # Try the common (conn_handle, value_handle, data) first, then fall back.
-        # try:
-        #     self._ble.gatts_notify(self._conn_handle, self._notify_handle, midi_bytes)
-        #     return True
-        # except TypeError:
-        #     try:
-        #         # Some stubs expect (value_handle, data)
-        #         self._ble.gatts_notify(self._notify_handle, midi_bytes)
-        #         return True
-        #     except Exception:
-        #         return False
-        # except Exception:
-        #     return False
 
     @staticmethod
     def make_midi_packet(status, note, vel):

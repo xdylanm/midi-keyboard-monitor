@@ -17,9 +17,10 @@ DEBUG = False
 
 
 class MidiReceiver:
-    def __init__(self, uart_id=0, rx_pin=17, baud=31250, simulate=False):
+    def __init__(self, uart_id=0, rx_pin=17, tx_pin=16, baud=31250, simulate=False):
         self.uart_id = uart_id
         self.rx_pin = rx_pin
+        self.tx_pin = tx_pin  # Not used for MIDI input, but required to avoid conflict with pin 0
         self.baud = baud
         self._cb = None
         self._uart = None
@@ -33,7 +34,7 @@ class MidiReceiver:
         # Initialize UART. Note: pin mapping depends on board
         if not self.simulate:
             try:
-                self._uart = machine.UART(self.uart_id, baudrate=self.baud, rx=self.rx_pin)
+                self._uart = machine.UART(self.uart_id, baudrate=self.baud, rx=self.rx_pin, tx=self.tx_pin)
             except Exception:
                 try:
                     self._uart = machine.UART(self.uart_id, baudrate=self.baud)
@@ -124,11 +125,8 @@ class MidiReceiver:
     def _emit_note_event(self, ev_type, channel, note, velocity):
         obj = {"type": "note", "event": ev_type, "channel": channel, "note": note, "velocity": velocity, "ts": time.ticks_ms()}
         # Log minimal info for debugging
-        try:
-            if DEBUG:
-                print('MIDI ->', ev_type, 'ch', channel, 'note', note, 'vel', velocity)
-        except Exception:
-            pass
+        if DEBUG:
+            print('MIDI ->', ev_type, 'ch', channel, 'note', note, 'vel', velocity)
         if self._cb:
             try:
                 self._cb(obj)

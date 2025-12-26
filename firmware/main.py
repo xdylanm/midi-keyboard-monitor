@@ -21,7 +21,7 @@ BUTTON_PIN = 15   # active-low push button with pull-up
 class LEDController:
     def __init__(self, led_pin_num=LED_PIN):
         self._pin = machine.Pin(led_pin_num, machine.Pin.OUT)
-        self._state = "idle"
+        self._pin.off()
         self._task = None
 
     async def _blink(self, on_ms=200, off_ms=800):
@@ -124,6 +124,7 @@ async def main():
     ble.start()
 
     led = LEDController()
+    
     if ble.is_connected():
         led.start_connected()
     else:
@@ -139,7 +140,6 @@ async def main():
         # return to pairing: restart advertising
         try:
             ble.disconnect()
-            print('Button: hold -> restart advertising')
         except Exception:
             pass
 
