@@ -12,6 +12,8 @@ dependencies:
   flutter_reactive_ble: ^5.0.2
 #  permission_handler: ^10.4.0
   webview_flutter: ^4.0.7
+  music_notes: any
+  path_provider: ^2.0.0
 
 dev_dependencies:
   flutter_test:

@@ -145,6 +145,7 @@ This frame shows the music score for the current practice plan.
 - Pad with rests at the end
 - adjust the size of the music score to fit four measures (including clef, timing and key signature, dynamics, etc.) across the panel. For two octaves, continue the last four measures below. 
 - The user should not have to scroll to see everything.
+- Implementation notes: use VexFlow in a WebView to display the music score. Be careful to adjust the scaling so that the score fits within the frame in both horizonatal and vertical orientations of the phone or tablet. 
 
 ## Persistence and formats
 
