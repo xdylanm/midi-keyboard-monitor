@@ -8,6 +8,7 @@ import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:flutter/services.dart';
 import 'models.dart';
 import 'settings_page.dart';
+import 'practice_plans_page.dart';
 import 'velocity_view.dart';
 import 'sheet_view.dart';
 
@@ -55,18 +56,17 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final BleService _ble = BleService();
+  BleService? _ble;
   SimulatedMidi? _sim;
   final List<NoteEvent> _recent = [];
   NoteEvent? _latest;
   StreamSubscription<NoteEvent>? _sub;
   StreamSubscription<SimulatedMidiNote>? _simSub;
-  bool _useSim = false;
+  bool _useSim = true;
 
   @override
   void initState() {
     super.initState();
-    _checkBluetooth();
     _subscribeToSource();
   }
 
@@ -76,9 +76,9 @@ class _HomePageState extends State<HomePage> {
     if (_useSim) {
       // Stop BLE scanning/periodic scan when running simulation to save resources.
       try {
-        _ble.stopPeriodicScan();
+        _ble?.stopPeriodicScan();
       } catch (_) {}
-      
+
       _sim ??= SimulatedMidi();
       _simSub = _sim!.stream.listen((s) {
         final e = NoteEvent(isNoteOn: s.noteOn, channel: 0, note: s.note, velocity: s.velocity, tsMs: DateTime.now().millisecondsSinceEpoch & 0xFFFF);
@@ -91,16 +91,19 @@ class _HomePageState extends State<HomePage> {
     } else {
       // Ensure BLE scanning is active when not using simulation.
       try {
-        _ble.startPeriodicScan();
+        _ble ??= BleService();
+        _ble!.startPeriodicScan();
       } catch (_) {}
 
-      _sub = _ble.events.listen((e) {
-        setState(() {
-          _latest = e;
-          _recent.add(e);
-          if (_recent.length > 16) _recent.removeAt(0);
+      if (_ble != null) {
+        _sub = _ble!.events.listen((e) {
+          setState(() {
+            _latest = e;
+            _recent.add(e);
+            if (_recent.length > 16) _recent.removeAt(0);
+          });
         });
-      });
+      }
     }
   }
 
@@ -141,9 +144,9 @@ class _HomePageState extends State<HomePage> {
                     try {
                       await channel.invokeMethod('requestEnable');
                       // Wait for BLE to become ready, then trigger a scan.
-                      try {
+                        try {
                         await bleApi.statusStream.firstWhere((s) => s == BleStatus.ready).timeout(const Duration(seconds: 8));
-                        _ble.startScan();
+                        _ble?.startScan();
                       } catch (e) {
                         debugPrint('Waiting for BLE ready failed: $e');
                       }
@@ -170,8 +173,8 @@ class _HomePageState extends State<HomePage> {
     _sub?.cancel();
     _simSub?.cancel();
     // Request a clean disconnect before disposing the BLE service.
-    _ble.disconnect();
-    _ble.dispose();
+    _ble?.disconnect();
+    _ble?.dispose();
     _sim?.dispose();
     super.dispose();
   }
@@ -179,18 +182,51 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('MIDI Keyboard Monitor'), actions: [IconButton(icon: Icon(Icons.settings), onPressed: () { Navigator.of(context).push(MaterialPageRoute(builder: (_) => SettingsPage())); })]),
+      appBar: AppBar(title: Text('MIDI Keyboard Monitor')),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(color: Colors.blue),
+              child: Text('Menu', style: TextStyle(color: Colors.white, fontSize: 24)),
+            ),
+            ExpansionTile(
+              leading: Icon(Icons.settings),
+              title: Text('Settings'),
+              children: [
+                ListTile(
+                  leading: Icon(Icons.library_music),
+                  title: Text('Practice Plans'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => PracticePlansPage()));
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.tune),
+                  title: Text('App Settings'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => SettingsPage()));
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             StreamBuilder<bool>(
-              stream: _ble.connected,
+              stream: _ble?.connected ?? Stream<bool>.value(false),
               builder: (context, snap) {
                 final connected = snap.data ?? false;
                 return StreamBuilder<bool>(
-                  stream: _ble.scanning,
+                  stream: _ble?.scanning ?? Stream<bool>.value(false),
                   builder: (context, scanSnap) {
                     final scanning = scanSnap.data ?? false;
                     final label = connected ? 'Connected' : (scanning ? 'Scanning' : 'Not connected');
@@ -205,13 +241,13 @@ class _HomePageState extends State<HomePage> {
                             SizedBox(width: 8),
                             Row(
                               children: [
-                                Text('Use Simulated MIDI'),
-                                Switch(value: _useSim, onChanged: (v) {
-                                  setState(() {
-                                    _useSim = v;
-                                    _subscribeToSource();
-                                  });
-                                }),
+                                        Text('Use Simulated MIDI'),
+                                        Switch(value: _useSim, onChanged: (v) {
+                                          setState(() {
+                                            _useSim = v;
+                                            _subscribeToSource();
+                                          });
+                                        }),
                                 if (_useSim)
                                   ElevatedButton(
                                     onPressed: () {
@@ -242,6 +278,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _simulatePress() {
-    _ble.simulateNote(60 + (_recent.length % 12), (20 + (_recent.length * 7)) % 128);
+    if (_useSim) {
+      final seq = SimulatedMidi.fromNoteList([60 + (_recent.length % 12)], tempoBpm: 60, velocity: (20 + (_recent.length * 7)) % 128);
+      _sim?.playSequence(seq);
+    } else {
+      _ble?.simulateNote(60 + (_recent.length % 12), (20 + (_recent.length * 7)) % 128);
+    }
   }
 }
