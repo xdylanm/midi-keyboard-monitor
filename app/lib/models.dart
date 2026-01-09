@@ -126,21 +126,19 @@ class HandSplit {
 }
 
 class ConstantTarget {
-  final int octaveIndex;
   final String intensityLabel; // pp,p,mp,mf,f,ff
-  ConstantTarget({required this.octaveIndex, required this.intensityLabel});
-  factory ConstantTarget.fromJson(Map<String, dynamic> j) => ConstantTarget(octaveIndex: (j['octaveIndex'] as num).toInt(), intensityLabel: j['intensityLabel'] as String);
-  Map<String, dynamic> toJson() => {'octaveIndex': octaveIndex, 'intensityLabel': intensityLabel};
+  ConstantTarget({required this.intensityLabel});
+  factory ConstantTarget.fromJson(Map<String, dynamic> j) => ConstantTarget(intensityLabel: j['intensityLabel'] as String);
+  Map<String, dynamic> toJson() => {'intensityLabel': intensityLabel};
 }
 
 class VariableTarget {
-  final int octaveIndex;
-  final double startIntensity;
-  final double endIntensity;
+  final String startIntensity;
+  final String endIntensity;
   final String? direction; // crescendo/decrescendo
-  VariableTarget({required this.octaveIndex, required this.startIntensity, required this.endIntensity, this.direction});
-  factory VariableTarget.fromJson(Map<String, dynamic> j) => VariableTarget(octaveIndex: (j['octaveIndex'] as num).toInt(), startIntensity: (j['startIntensity'] as num).toDouble(), endIntensity: (j['endIntensity'] as num).toDouble(), direction: j['direction'] as String?);
-  Map<String, dynamic> toJson() => {'octaveIndex': octaveIndex, 'startIntensity': startIntensity, 'endIntensity': endIntensity, if (direction != null) 'direction': direction};
+  VariableTarget({required this.startIntensity, required this.endIntensity, this.direction});
+  factory VariableTarget.fromJson(Map<String, dynamic> j) => VariableTarget(startIntensity: j['startIntensity'] as String, endIntensity: j['endIntensity'] as String, direction: j['direction'] as String?);
+  Map<String, dynamic> toJson() => {'startIntensity': startIntensity, 'endIntensity': endIntensity, if (direction != null) 'direction': direction};
 }
 
 // GlobalConfig aligned with app/lib/schemas/global_config.schema.json

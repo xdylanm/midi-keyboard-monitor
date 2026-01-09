@@ -14,8 +14,6 @@ class _PracticePlansPageState extends State<PracticePlansPage> {
   List<PracticePlan> _visible = [];
   String _query = '';
   final TextEditingController _searchCtrl = TextEditingController();
-  String? _debugKeyPart;
-  String? _debugScalePart;
 
   // no form on this page; config lives on a separate screen
 
@@ -46,8 +44,6 @@ class _PracticePlansPageState extends State<PracticePlansPage> {
   void _applyFilter() {
     final q = _query.trim();
     // reset debug parts
-    _debugKeyPart = null;
-    _debugScalePart = null;
     if (q.isEmpty) {
       _visible = List.from(_plans);
       return;
@@ -65,8 +61,6 @@ class _PracticePlansPageState extends State<PracticePlansPage> {
     if (keyScaleMatch != null) {
       keyPart = keyScaleMatch.group(1)?.toUpperCase();
       scalePart = keyScaleMatch.group(2)?.toLowerCase();
-      _debugKeyPart = keyPart;
-      _debugScalePart = scalePart;
     }
 
     int? bpm;
@@ -205,11 +199,6 @@ class _PracticePlansPageState extends State<PracticePlansPage> {
                 },
               ),
               SizedBox(height: 8),
-              // debug helper: show matched keyPart:scalePart or 'no match'
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: Text(_debugKeyPart == null ? 'no match' : '${_debugKeyPart}:${_debugScalePart ?? ''}', style: TextStyle(color: Colors.grey[600])),
-              ),
               // create new at top (always shown)
               ListTile(
                 leading: Icon(Icons.add),
