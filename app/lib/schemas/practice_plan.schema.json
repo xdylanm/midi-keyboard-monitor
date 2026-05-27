@@ -28,10 +28,9 @@
       "items": {
         "type": "object",
         "properties": {
-          "octaveIndex": { "type": "integer" },
           "intensityLabel": { "type": "string", "enum": ["pp","p","mp","mf","f","ff"] }
         },
-        "required": ["octaveIndex","intensityLabel"]
+        "required": ["intensityLabel"]
       }
     },
     "variableTargets": {
@@ -39,12 +38,11 @@
       "items": {
         "type": "object",
         "properties": {
-          "octaveIndex": { "type": "integer" },
-          "startIntensity": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
-          "endIntensity": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+          "startIntensity": { "type": "string", "enum": ["pp","p","mp","mf","f","ff"] },
+          "endIntensity": { "type": "string", "enum": ["pp","p","mp","mf","f","ff"] },
           "direction": { "type": "string", "enum": ["crescendo","decrescendo"] }
         },
-        "required": ["octaveIndex","startIntensity","endIntensity"]
+        "required": ["startIntensity","endIntensity"]
       }
     },
     "notesPerMeasure": { "type": "integer", "default": 4 }
