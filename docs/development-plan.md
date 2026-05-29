@@ -377,7 +377,7 @@ Recommended external tools for validation:
 Tasks:
 - Implement `MidiSource` abstract interface.
 - Implement `UsbMidiAdapter` using python-rtmidi; enumerate connected USB MIDI devices.
-- Implement `BleAdapter` connecting to the existing BLE dongle using the BLE-MIDI protocol (reference: existing Flutter `ble_service.dart` parser).
+- Implement `BleAdapter` connecting to the existing BLE dongle using the BLE-MIDI protocol (reference: existing `midi.py` firmware module).
 - Emit normalized `MidiEvent` records from both adapters; verify identical downstream behavior.
 
 Acceptance:
