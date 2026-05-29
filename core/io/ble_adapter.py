@@ -4,11 +4,14 @@ BleAdapter — real-time BLE-MIDI input via bleak.
 Implements MidiSource over the project's BLE dongle (Raspberry Pi Pico W)
 or any device advertising the standard BLE-MIDI GATT service.
 
-BLE-MIDI 1.0 packet format
----------------------------
-Byte 0  - Header:     [ 1 1 ts5 ts4 ts3 ts2 ts1 ts0 ]  (bits 7:6 always 11)
+BLE-MIDI 1.0 packet format  (Apple / MIDI Association spec)
+-------------------------------------------------------------
+Byte 0  - Header:    [ 1 R ts12 ts11 ts10 ts9 ts8 ts7 ]
+            bit 7=1 (required), bit 6=R (reserved — write 0, ignore on read),
+            bits 5:0 = upper 6 bits of 13-bit millisecond timestamp
 Per event:
-  Byte N  - Timestamp: [ 1 0 ts6 ts5 ts4 ts3 ts2 ts1 ts0 ] (bits 7:6 always 10)
+  Byte N  - Timestamp: [ 1 ts6 ts5 ts4 ts3 ts2 ts1 ts0 ]
+            bit 7=1 (required), bits 6:0 = lower 7 bits of timestamp
   Byte N+1 - MIDI Status (optional under running status)
   Byte N+2+ - MIDI data bytes
 
@@ -244,8 +247,8 @@ class BleAdapter(MidiSource):
             return events
 
         header = data[0]
-        if not ((header & 0x80) and (header & 0x40)):
-            log.warning("BleAdapter: invalid header byte 0x%02X (bits 7:6 must be 11)", header)
+        if not (header & 0x80):
+            log.warning("BleAdapter: invalid header byte 0x%02X (bit 7 must be 1)", header)
             return events
 
         timestamp_high = header & 0x3F
@@ -257,9 +260,6 @@ class BleAdapter(MidiSource):
             b = data[i]
             if not (b & 0x80):
                 log.warning("BleAdapter: expected timestamp at offset %d, got 0x%02X", i, b)
-                break
-            if b & 0x40:
-                log.warning("BleAdapter: unexpected second header at offset %d", i)
                 break
 
             timestamp_low = b & 0x7F

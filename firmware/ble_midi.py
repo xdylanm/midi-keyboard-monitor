@@ -114,14 +114,15 @@ class BLEMidi:
         """Create a minimal BLE-MIDI packet for a single MIDI message.
 
         Encodes a 13-bit timestamp (milliseconds) per the BLE-MIDI 1.0 spec:
-        - header byte:    bits 7:6 = 11, bits 5:0 = upper 6 bits of timestamp
-        - timestamp byte: bits 7:6 = 10, bits 6:0 = lower 7 bits of timestamp
+        - header byte:    bit 7=1, bit 6=0, bits 5:0 = upper 6 bits of timestamp
+        - timestamp byte: bit 7=1, bit 6 = ts[6] (data), bits 5:0 = lower 6 bits
         then the raw MIDI message bytes.
+        Full 13-bit value = (header & 0x3F) << 7 | (timestamp_byte & 0x7F)
         """
         ts = int(time.ticks_ms() & 0x1FFF)  # 13 bits
-        high = (ts >> 7) & 0x3F             # upper 6 bits
-        low = ts & 0x7F                     # lower 7 bits
-        first = 0xC0 | high                 # 0b11xxxxxx  (header)
-        second = 0x80 | low                 # 0b10xxxxxxx (timestamp byte)
+        high = (ts >> 7) & 0x3F             # upper 6 bits of timestamp → header bits 5:0
+        low = ts & 0x7F                     # lower 7 bits of timestamp → timestamp byte bits 6:0
+        first = 0x80 | high                 # 0b10xxxxxx  (header: bit 7=1, bit 6=0)
+        second = 0x80 | low                 # 0b1xxxxxxx  (timestamp byte: bit 7=1, bit 6 is ts data)
         header = bytes([first, second])
         return header + bytes([status, note, vel])
