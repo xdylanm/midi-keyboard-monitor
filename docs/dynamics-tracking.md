@@ -1,4 +1,7 @@
-# Dynamics Tracking
+# Dynamics Tracking (legacy reference — superseded)
+
+> **Status**: This document was the authoritative spec for the Flutter/Android prototype phase. It is retained as a historical implementation reference for dynamics scoring, velocity mapping, and practice plan concepts.
+> The active product requirements are in [docs/development-plan.md](development-plan.md).
 
 ## Practice Modes
 
