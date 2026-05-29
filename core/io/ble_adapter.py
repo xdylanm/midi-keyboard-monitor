@@ -76,6 +76,8 @@ class BleAdapter(MidiSource):
         self._disconnect_callback: Optional[Callable[[], None]] = None
         self._client = None
         self._connected = False
+        # Populated by list_devices(); reused by connect() to avoid a second scan.
+        self._ble_device_cache: dict[str, object] = {}  # address -> BLEDevice
 
     # ------------------------------------------------------------------
     # Device enumeration
@@ -91,11 +93,10 @@ class BleAdapter(MidiSource):
         """
         if BleakScanner is None:
             raise RuntimeError("bleak is not installed")
-        devices = await BleakScanner.discover(timeout=timeout_s)
+        discovered = await BleakScanner.discover(timeout=timeout_s, return_adv=True)
         results = []
-        for d in devices:
-            uuids = getattr(d, "metadata", {}).get("uuids", [])
-            if BLE_MIDI_SERVICE_UUID in [u.lower() for u in uuids] and d.name:
+        for d, adv in discovered.values():
+            if BLE_MIDI_SERVICE_UUID in [u.lower() for u in adv.service_uuids] and d.name:
                 results.append(d.name)
         return results
 
@@ -109,11 +110,12 @@ class BleAdapter(MidiSource):
         """
         if BleakScanner is None:
             raise RuntimeError("bleak is not installed")
-        devices = await BleakScanner.discover(timeout=self._scan_timeout_s)
+        discovered = await BleakScanner.discover(timeout=self._scan_timeout_s, return_adv=True)
+        self._ble_device_cache.clear()
         results = []
-        for d in devices:
-            uuids = getattr(d, "metadata", {}).get("uuids", [])
-            if BLE_MIDI_SERVICE_UUID in [u.lower() for u in uuids] and d.name:
+        for d, adv in discovered.values():
+            if BLE_MIDI_SERVICE_UUID in [u.lower() for u in adv.service_uuids] and d.name:
+                self._ble_device_cache[str(d.address)] = d
                 results.append(DeviceInfo(name=d.name, address=str(d.address)))
         return results
 
@@ -130,7 +132,12 @@ class BleAdapter(MidiSource):
 
     async def connect(self, timeout_s: float = 10.0) -> None:
         """
-        Scan for the device and establish a BLE connection.
+        Establish a BLE connection.
+
+        If list_devices() was called on this instance first, the BLEDevice
+        object from that scan is reused directly — no second scan is needed.
+        This is important on Windows where connecting by address string alone
+        is unreliable; bleak requires the BLEDevice object from a recent scan.
 
         Raises:
             RuntimeError: if bleak is not installed.
@@ -139,16 +146,37 @@ class BleAdapter(MidiSource):
         if BleakScanner is None or BleakClient is None:
             raise RuntimeError("bleak is not installed")
 
-        devices = await BleakScanner.discover(timeout=self._scan_timeout_s)
+        # Prefer a BLEDevice object from a prior list_devices() scan on this
+        # instance — avoids a second scan and the Windows address-string issue.
         target = None
-        for d in devices:
-            if self._require_midi_service:
-                uuids = getattr(d, "metadata", {}).get("uuids", [])
-                if BLE_MIDI_SERVICE_UUID not in [u.lower() for u in uuids]:
-                    continue
-            if self._device_name is None or d.name == self._device_name:
-                target = d
+        for cached_device in self._ble_device_cache.values():
+            if self._device_name is None or getattr(cached_device, "name", None) == self._device_name:
+                target = cached_device
                 break
+
+        if target is None:
+            # No cache hit — run a fresh callback-based scan.
+            found_event = asyncio.Event()
+
+            def _detection_callback(device, adv) -> None:
+                nonlocal target
+                if target is not None:
+                    return
+                if self._require_midi_service:
+                    if BLE_MIDI_SERVICE_UUID not in [u.lower() for u in adv.service_uuids]:
+                        return
+                if self._device_name is None or device.name == self._device_name:
+                    target = device
+                    found_event.set()
+
+            scanner = BleakScanner(detection_callback=_detection_callback)
+            await scanner.start()
+            try:
+                await asyncio.wait_for(found_event.wait(), timeout=self._scan_timeout_s)
+            except asyncio.TimeoutError:
+                pass
+            finally:
+                await scanner.stop()
 
         if target is None:
             suffix = f" named {self._device_name!r}" if self._device_name else ""

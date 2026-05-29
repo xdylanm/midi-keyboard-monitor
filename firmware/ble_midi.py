@@ -113,17 +113,15 @@ class BLEMidi:
     def make_midi_packet(status, note, vel):
         """Create a minimal BLE-MIDI packet for a single MIDI message.
 
-        This is a small, compatible-enough packet for testing single messages.
-        It encodes a 13-bit timestamp (milliseconds) into a two-byte header:
-        - first byte: upper two bits = 10, lower 6 bits = upper 6 bits of timestamp
-        - second byte: MSB = 1, lower 7 bits = lower 7 bits of timestamp
+        Encodes a 13-bit timestamp (milliseconds) per the BLE-MIDI 1.0 spec:
+        - header byte:    bits 7:6 = 11, bits 5:0 = upper 6 bits of timestamp
+        - timestamp byte: bits 7:6 = 10, bits 6:0 = lower 7 bits of timestamp
         then the raw MIDI message bytes.
         """
-        
         ts = int(time.ticks_ms() & 0x1FFF)  # 13 bits
         high = (ts >> 7) & 0x3F             # upper 6 bits
         low = ts & 0x7F                     # lower 7 bits
-        first = 0x80 | high                 # 0b10xxxxxx
-        second = 0x80 | low                 # MSB=1 + 7-bit low timestamp
+        first = 0xC0 | high                 # 0b11xxxxxx  (header)
+        second = 0x80 | low                 # 0b10xxxxxxx (timestamp byte)
         header = bytes([first, second])
         return header + bytes([status, note, vel])

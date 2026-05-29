@@ -49,16 +49,20 @@ async def main():
     device_name = sys.argv[1] if len(sys.argv) > 1 else "MK Monitor"
 
     print(f"Scanning for BLE-MIDI devices (5 s)...")
-    found = await BleAdapter.enumerate_devices(timeout_s=5.0)
+    adapter = BleAdapter(device_name=device_name, scan_timeout_s=5.0)
+    found = await adapter.list_devices()
     if not found:
         print("  (none found — is the BLE dongle powered on and advertising?)")
         return
     print("Discovered BLE-MIDI devices:")
-    for name in found:
-        print(f"  • {name}")
+    for info in found:
+        print(f"  • {info.name}")
+
+    if not any(d.name == device_name for d in found):
+        print(f"\nDevice {device_name!r} not in scan results.")
+        return
 
     print(f"\nConnecting to: {device_name!r}")
-    adapter = BleAdapter(device_name=device_name)
     adapter.register_callback(on_event)
     adapter.register_disconnect_callback(on_disconnect)
 
@@ -68,7 +72,7 @@ async def main():
         while adapter.is_connected():
             await asyncio.sleep(0.5)
         print("Connection lost.")
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, asyncio.CancelledError):
         print("\nStopping...")
     finally:
         await adapter.disconnect()
