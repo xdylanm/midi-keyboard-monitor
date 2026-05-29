@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "performance_id": "perf-001",
+  "score_ref": "scores/Cmaj.musicxml",
+  "recorded_at": "2026-05-28T12:00:00Z",
+  "notes": [
+    {
+      "note": 60,
+      "onset_ms": 0.0,
+      "duration_ms": 500.0,
+      "velocity": 64
+    },
+    {
+      "note": 62,
+      "onset_ms": 500.0,
+      "duration_ms": 500.0,
+      "velocity": 72
+    }
+  ],
+  "summary": {
+    "note_accuracy": null,
+    "rhythm_accuracy": null,
+    "dynamics_accuracy": null
+  }
+}

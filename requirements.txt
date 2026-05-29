@@ -4,3 +4,8 @@ mkdocs-jupyter
 numpy
 matplotlib
 mkdocs-material
+# M1 core dependencies
+music21
+mido
+jsonschema
+pytest

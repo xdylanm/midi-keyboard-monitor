@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "analysis_result.schema.json",
+  "title": "AnalysisResult",
+  "description": "Per-session performance accuracy result sidecar (schema v1.0).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "performance_id",
+    "score_ref",
+    "recorded_at",
+    "notes",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Schema version string, e.g. '1.0'."
+    },
+    "performance_id": {
+      "type": "string",
+      "description": "Unique identifier for the recorded performance."
+    },
+    "score_ref": {
+      "type": "string",
+      "description": "Reference path or identifier of the score used for evaluation."
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 datetime when the performance was recorded."
+    },
+    "notes": {
+      "type": "array",
+      "description": "Per-note accuracy records. May be empty in M1.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "type": ["integer", "null"],
+            "minimum": 0,
+            "maximum": 127,
+            "description": "MIDI note number."
+          },
+          "onset_ms": {
+            "type": ["number", "null"],
+            "description": "Note onset time in milliseconds."
+          },
+          "duration_ms": {
+            "type": ["number", "null"],
+            "description": "Note duration in milliseconds."
+          },
+          "velocity": {
+            "type": ["integer", "null"],
+            "minimum": 0,
+            "maximum": 127,
+            "description": "MIDI velocity."
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": ["object", "null"],
+      "description": "Aggregate accuracy summary. Null fields are allowed in M1.",
+      "additionalProperties": false,
+      "properties": {
+        "note_accuracy": {
+          "type": ["number", "null"],
+          "description": "Aggregate note pitch accuracy (0.0–1.0)."
+        },
+        "rhythm_accuracy": {
+          "type": ["number", "null"],
+          "description": "Aggregate rhythm accuracy (0.0–1.0)."
+        },
+        "dynamics_accuracy": {
+          "type": ["number", "null"],
+          "description": "Aggregate dynamics accuracy (0.0–1.0)."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "performance_id": "perf-003",
+  "score_ref": "scores/Cmaj.musicxml",
+  "recorded_at": "2026-05-28T12:00:00Z",
+  "notes": [],
+  "summary": {
+    "note_accuracy": null,
+    "rhythm_accuracy": null,
+    "dynamics_accuracy": null
+  },
+  "unknown_field": "this should not be here"
+}
